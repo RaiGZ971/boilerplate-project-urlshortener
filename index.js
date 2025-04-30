@@ -4,6 +4,22 @@ const cors = require('cors');
 const app = express();
 const bodyParser = require('body-parser');
 const dns = require('dns');
+const mongoose = require('mongoose');
+
+mongoose.connect(process.env.MONGO_URI)
+  .then((data) => {
+    console.log(data.connection.host);
+  })
+  .catch((err) => {
+    console.log("CONNECTION FAILED");
+  })
+
+const urlSchema = new mongoose.Schema({
+  link: {type:String, required: true},
+  shortKey: {type:Number, required: true},
+})
+
+const UrlModel = mongoose.model('urlModel', urlSchema);
 
 // Basic Configuration
 const port = process.env.PORT || 3000;
@@ -26,12 +42,13 @@ let url, id;
 let uniqueURL = () => Math.floor(Math.random() * 10000);
 
 app.post('/api/shorturl', (req, res, next) => {
+
   try{
     url = new URL(req.body.url);
   } 
   catch(err) {
     return res.json({
-      error: "No short URL found for the given input"
+      error: "invalid url"
     })
   }
 
@@ -40,6 +57,20 @@ app.post('/api/shorturl', (req, res, next) => {
   next();
 
 }, (req, res) =>{
+
+  let newLink = new UrlModel({
+    link: url,
+    shortKey: id
+  })
+
+  newLink.save()
+    .then((data) => {
+      console.log(data);
+    })
+    .catch((err) => {
+      console.error(err);
+    })
+
   res.json({
     original_url: url,
     short_url: id
@@ -47,7 +78,20 @@ app.post('/api/shorturl', (req, res, next) => {
 })
 
 app.use('/api/shorturl/:shortcut', (req, res) => {
-  res.redirect(url);
+
+  let shortcutKey = req.params.shortcut;
+
+  UrlModel.findOne({shortKey : shortcutKey})
+    .then((data) => {
+      console.log(`URL found ${data.link}`);
+      res.redirect(data.link);
+    })
+    .catch((err) => {
+      console.log("No URL found");
+      return res.json({
+        error: "invalid url"
+      })
+    })
 })
 
 app.listen(port, function() {
