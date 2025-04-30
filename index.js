@@ -45,6 +45,11 @@ app.post('/api/shorturl', (req, res, next) => {
     short_url: id
   })
 })
+
+app.use('/api/shorturl/:shortcut', (req, res) => {
+  res.redirect(url);
+})
+
 app.listen(port, function() {
   console.log(`Listening on port ${port}`);
 });
