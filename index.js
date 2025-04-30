@@ -52,9 +52,14 @@ app.post('/api/shorturl', (req, res, next) => {
     })
   }
 
-  id = uniqueURL();
-
-  next();
+  dns.lookup(url.hostname, (err, address) => {
+    if(err){
+      console.error('DNS Lookup Error:', err);
+      return res.json({error: "invalid url"})
+    }
+    id = uniqueURL();
+    next();
+  })  
 
 }, (req, res) =>{
 
